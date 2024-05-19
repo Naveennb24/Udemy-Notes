@@ -1,0 +1,171 @@
+Terraform:
+
+  - HashiCorp Terraform is an infrastructure as code tool that lets you define both cloud and on-prem resources in human-readable
+    configuration files that you can version, reuse, and share
+  - You can then use a consistent workflow to provision and manage all of your infrastructure throughout its lifecycle
+  - Terraform can manage low-level components like compute, storage, and networking resources,
+    as well as high-level components like DNS entries and SaaS features.
+
+How does Terraform work?
+
+  - Terraform creates and manages resources on cloud platforms and other services through their application programming interfaces (APIs).
+  - Providers enable Terraform to work with virtually any platform or service with an accessible API.
+
+  - The core Terraform workflow consists of three stages:
+
+    - Write:
+
+      - You define resources, which may be across multiple cloud providers and services
+      - For example, you might create a configuration to deploy an application on virtual machines
+        in a Virtual Private Cloud (VPC) network with security groups and a load balancer.
+
+    - Plan:
+
+      - Terraform creates an execution plan describing the infrastructure it will create, update, or destroy
+        based on the existing infrastructure and your configuration.
+
+    - Apply:
+
+      - On approval, Terraform performs the proposed operations in the correct order, respecting any resource dependencies.
+      - For example, if you update the properties of a VPC and change the number of virtual machines in that VPC, Terraform will recreate the VPC before scaling the virtual machines.
+
+What is Infrastructure as Code with Terraform?
+
+  - Infrastructure as code (IaC) tools allow you to manage infrastructure with configuration files rather than through a graphical user interface.
+  - IaC allows you to build, change, and manage your infrastructure in a safe, consistent, and repeatable way by defining resource configurations that you can version, reuse, and share.
+  - Terraform is HashiCorp's infrastructure as code tool.
+  - It lets you define resources and infrastructure in human-readable, declarative configuration files, and manages your infrastructure's lifecycle.
+  - Here are the advantages with Terraform:
+
+    - Terraform can manage infrastructure on multiple cloud platforms.
+    - The human-readable configuration language helps you write infrastructure code quickly.
+    - Terraform's state allows you to track resource changes throughout your deployments.
+    - You can commit your configurations to version control to safely collaborate on infrastructure.
+
+  - Terraform's configuration language is declarative, meaning that it describes the desired end-state for your infrastructure
+  - To deploy infrastructure with Terraform:
+
+    - Scope - Identify the infrastructure for your project.
+    - Author - Write the configuration for your infrastructure.
+    - Initialize - Install the plugins Terraform needs to manage the infrastructure.
+    - Plan - Preview the changes Terraform will make to match your configuration.
+    - Apply - Make the planned changes.
+
+  - Terraform keeps track of your real infrastructure in a state file, which acts as a source of truth for your environment.
+  - Terraform uses the state file to determine the changes to make to your infrastructure so that it will match your configuration.
+
+Install Terraform: (For MacOS)
+
+  $ brew tap hashicorp/tap
+
+  $ brew install hashicorp/tap/terraform
+
+  $ brew update
+
+  $ brew upgrade hashicorp/tap/terraform  (For upgrade)
+
+  $ terraform version
+
+Hashicorp configuration language (HCL):
+
+  - The syntax of Terraform configurations is called HashiCorp Configuration Language (HCL)
+  - It is meant to strike a balance between human readable and editable as well as being machine-friendly.
+  - For machine-friendliness, Terraform can also read JSON configurations.
+  - Here is an example of Terraform's HCL syntax:
+
+      <block> <parameter> {
+      key1 = value1
+      key2 = value2
+      }
+
+  - Here is the example:
+
+    resource "local_file" "pets" {
+    filename = "/home/pets.txt"
+    content = "This is the content of pets file"
+    }
+
+    - Explinatioin:
+
+      resource --> block name
+      local_file --> resource type
+      local --> provider (Ex: AWS, GCP, AZURE, Etc.,)
+      file --> resource (Ex: ec2, s3, vpc, etc.,  )
+      pets --> resource name
+      filename , contents --> arguments
+
+  - Block:
+
+    - A block is a container for other content
+    - Example:
+
+        resource "aws_instance" "example" {
+            ami = "abc123"
+
+            network_interface {
+              # ...
+            }
+            }
+
+        - A block has a type (resource in this example).
+        - Each block type defines how many labels must follow the type keyword.
+        - The resource block type expects two labels, which are aws_instance and example in the example
+        - A particular block type may have any number of required labels, or it may require none as with the nested network_interface block type.
+        - After the block type keyword and any labels, the block body is delimited by the { and } characters.
+        - Within the block body, further arguments and blocks may be nested, creating a hierarchy of blocks and their associated arguments.
+
+  - Arguments:
+
+    - An argument assigns a value to a particular name:
+    - Example:
+
+      image_id = "abc123"
+
+      - The identifier before the equals sign is the argument name, and the expression after the equals sign is the argument's value.
+
+Terraform Workflow:
+
+  - A simple terraform workflow consists of 4 steps:
+
+    1. Write the configuration file (".tf" file)
+      - TF file is used for writing configuration files in Terraform using HCL.
+      
+    2. Run the terraform init command
+
+        $ terraform init
+
+        - This command will check the configuration file and initialize the working directory containing the ".tf" file
+        - It performs the following steps:
+
+           * Backend Initialization
+           * Child Module Installation
+           * Plugin Installation
+
+    3. Review the execution plan by using the terraform "plan" command
+
+        $ terraform plan
+
+        - This command will show you the actions that will be carried out by terraform to create the resource
+        - This command is a convenient way to check whether the execution plan for a set of changes matches your expectations
+          without making any changes to real resources or to the state.
+        - By default, when Terraform creates a plan it:
+
+          * Reads the current state of any already-existing remote objects to make sure that the Terraform state is up-to-date.
+          * Compares the current configuration to the prior state and noting any differences.
+          * Proposes a set of change actions that should, if applied, make the remote objects match the configuration
+
+    4. Apply the changes using the terraform "apply" command
+
+        $ terraform apply
+
+        - The terraform apply command executes the actions proposed in a Terraform plan.
+        - it will automatically create a new execution plan (as if you had run terraform plan) and
+          then prompt you to approve that plan, before taking the indicated actions.
+        - Another way to use terraform apply is to pass it the filename of a saved plan file you created earlier with terraform plan -out=...,
+          in which case Terraform will apply the changes in the plan without any confirmation prompt.
+
+  - If we would like to destroy the whole infrastructure, just use the "destroy" command
+
+    $ terraform destroy
+
+      - The terraform destroy command is a convenient way to destroy all remote objects managed by a particular Terraform configuration.

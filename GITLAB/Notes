@@ -1,0 +1,471 @@
+What is CI / CD?
+
+  - CI stands for Continuous Integration
+
+    - CI is a practice
+    - Code is integrated with other developers
+    - Most commonly the way to integrate code is to check if the build step is still working
+    - A common practice is to also check if unit tests still work
+    - The goal of the CI pipeline is to build a package that can be deployed
+
+  - CD can stand for Continuous Delivery
+
+    - CD is done after CI
+    - You cannot do CD without first doing CI
+    - The goal of CD is to take the package created by the CI pipeline and to test it further
+    - After a manual check/decision, the package can be installed on a production system as well
+
+  - CD can also stand for Continuous Deployment
+
+    - CD goes a step further and automatically installs every package to production
+    - The package must first go through all previous stages successfully
+    - No manual intervention is required
+
+CI/CD workflow
+
+  - Developer/other develops the code
+  - CI Pipeline starts
+
+    - BUILD
+    - CODE QUALITY
+    - TESTS
+    - PACKAGE
+
+  - CD Pipeline starts
+
+    - REVIEW/TEST
+    - STAGING
+    - PRODUCTION
+
+Building the project using GitLab CI
+
+  - Here is the example to create a sample pipeline script
+  - The file name must be ".gitlab-ci.yml" and should reside on the root folder of the project
+
+  - Example:
+
+        image: node
+
+        stages:
+          - build
+          - test
+          - deploy
+
+        build website:
+          stage: build
+          script:
+            - npm install
+            - npm install -g gatsby-cli
+            - gatsby build
+          artifacts:
+            paths:
+              - ./public
+
+        test artifact:
+          image: alpine
+          stage: test
+          script:
+            - grep -q "Gatsby" ./public/index.html
+
+        test website:
+          stage: test
+          script:
+            - npm install
+            - npm install -g gatsby-cli
+            - gatsby serve &
+            - sleep 3
+            - curl "http://localhost:9000" | tac | tac | grep -q "Gatsby"
+
+        deploy to surge:
+          stage: deploy
+          script:
+            - npm install --global surge
+            - surge --project ./public --domain instazone.surge.sh
+
+Status codes:
+
+  - After a command is executed, it will return an exit status as follows:
+
+    - all command have an exit code (between 0 and 255) that is returned
+    - 0 means successfully executed
+    - >0 means that is failed
+
+CI/CD pipelines:
+
+  - Pipelines are the top-level component of continuous integration, delivery, and deployment
+  - Pipelines consists of - Jobs & stages
+  - Jobs, which define what to do. For example, jobs that compile or test code
+  - Stages, which define when to run the jobs. For example, stages that run tests after stages that compile the code
+
+  - Jobs are executed by runners. Multiple jobs in the same stage are executed in parallel, if there are enough concurrent runners
+  - If all jobs in a stage succeed, the pipeline moves on to the next stage
+  - If any job in a stage fails, the next stage is not (usually) executed and the pipeline ends early
+  - In general, pipelines are executed automatically and require no intervention once created
+  - A typical pipeline might consist of four stages, executed in the following order:
+
+      - A build stage, with a job called compile
+      - A test stage, with two jobs called test1 and test2
+      - A staging stage, with a job called deploy-to-stage
+      - A production stage, with a job called deploy-to-prod
+
+  - Types of pipelines
+
+    - Pipelines can be configured in many different ways:
+
+      - Basic pipelines run everything in each stage concurrently, followed by the next stage
+      - Directed Acyclic Graph Pipeline (DAG) pipelines are based on relationships between jobs and can run more quickly than basic pipelines
+      - Merge request pipelines run for merge requests only (rather than for every commit)
+      - Merged results pipelines are merge request pipelines that act as though the changes from the source branch have already been merged into the target branch
+      - Merge trains use merged results pipelines to queue merges one after the other
+      - Parent-child pipelines break down complex pipelines into one parent pipeline that can trigger multiple child sub-pipelines, which all run in the same project and with the same SHA. This pipeline architecture is commonly used for mono-repos
+      - Multi-project pipelines combine pipelines for different projects together
+
+  - Configure a pipeline:
+
+    - Pipelines and their component jobs & stages are defined in the CI/CD pipeline configuration file ".gitlab-ci.yml" for each project.
+    - When you are editing your ".gitlab-ci.yml" file, you can validate it with the CI Lint tool
+    - CI Lint tool:
+      - This tool checks for syntax and logic errors, and can simulate pipeline creation to try to find more complicated configuration problems.
+    - A GitLab CI/CD pipeline configuration includes:
+
+      - Global keywords that configure pipeline behaviour:
+        - Some keywords are not defined in a job. These keywords control pipeline behaviour or import additional pipeline configuration.
+
+        - default : Custom default values for job keywords.
+        - include : Import configuration from other YAML files.
+        - stages  : The names and order of the pipeline stages.
+        - variables : Define CI/CD variables for all job in the pipeline.
+        - workflow  : Control what types of pipeline run.
+
+      - Jobs configured with job keywords:
+
+        - artifacts :  List of files and directories to attach to a job on success.
+        - environment : Name of an environment to which the job deploys.
+        - image : Use Docker images
+        - script  : Shell script that is executed by a runner.
+        - tags  : List of tags that are used to select a runner.
+        - variables : Define job variables on a job level
+        - when  : when to run a job
+        - retry : When and how many times a job can be auto-retried in case of a failure.
+        - after_script, allow_failure, before_script, cache, coverage, etc.,
+
+      - The "stages" keyword:
+
+        - Use "stages" to define stages that contain groups of jobs.
+        - Use "stage" in a job to configure the job to run in a specific stage.
+        - If stages is not defined in the .gitlab-ci.yml file, the default pipeline stages are:
+
+          - .pre :
+              - Use the .pre stage to make a job run at the start of a pipeline.
+              - Is always the first stage in a pipeline.
+              - You do not have to define .pre in stages
+              - You must have a job in at least one stage other than .pre or .post
+          - build
+          - test
+          - deploy
+          - .post:
+            - Use the '.post' stage to make a job run at the end of a pipeline.
+            - '.post' is always the last stage in a pipeline.
+            - User-defined stages execute before '.post'
+            - You do not have to define .post in stages.
+
+        - The order of the items in stages defines the execution order for jobs:
+          - Jobs in the same stage run in parallel.
+          - Jobs in the next stage run after the jobs from the previous stage complete successfully.
+          - Syntax:
+
+              stages:
+                - build
+                - test
+                - deploy
+          - Example:
+
+              stages:
+                - a
+                - b
+                - c
+
+              c:
+                - stage: c
+                - script: echo "c"
+
+              b:
+                - stage: b
+                - script: echo "b"
+
+              a:
+                - stage: a
+                - script: echo "a"
+
+            - In this example, the jobs will be executed in the order a,b and c
+
+    - Jobs:
+
+      - Pipeline configuration begins with jobs. Jobs are the most fundamental element of a .gitlab-ci.yml file.
+      - Jobs are:
+        - Defined with constraints stating under what conditions they should be executed.
+        - Top-level elements with an arbitrary name and must contain at least the script clause.
+        - Not limited in how many can be defined.
+      - Example:
+
+        job1:
+          script: "execute this script for job1"
+        job2:
+          script: "execute this script for job2"
+
+      - Jobs are picked up by runners and executed in the environment of the runner.
+      - Each job is run independently from each other
+      - Job name limitations which means, You can’t use these keywords as job names:
+
+        - image, services, stages, types, before_script, after_script, variables, cache, include, true, false, nil
+
+    - Runners:
+
+      - GitLab Runner is an application that works with GitLab CI/CD to run jobs in a pipeline
+      - GitLab Runner is open-source and written in Go
+      - You can choose to install the GitLab Runner application on infrastructure that you own or manage
+      - If you do, you should install GitLab Runner on a machine that’s separate from the one that hosts the GitLab instance for security and performance reasons
+      - You can install GitLab Runner on several different supported operating systems
+      - GitLab Runner can also run inside a Docker container or be deployed into a Kubernetes cluster
+      - Runner registration:
+
+        - After you install the application, you register individual runners
+        - Runners are the agents that run the CI/CD jobs that come from GitLab
+        - When you register a runner, you are setting up communication between your GitLab instance and the machine where GitLab Runner is installed
+        - Runners usually process jobs on the same machine where you installed GitLab Runner
+        - However, you can also have a runner process jobs in a container, in a Kubernetes cluster, or in auto-scaled instances in the cloud
+
+        - Executors:
+
+            - When you register a runner, you must choose an executor
+            - An executor determines the environment each job runs in
+            - For Example:
+
+              - If you want your CI/CD job to run PowerShell commands, you might install GitLab Runner on a Windows server and then register a runner that uses the shell executor
+              - If you want your CI/CD job to run commands in a custom Docker container, you might install GitLab Runner on a Linux server and register a runner that uses the Docker executor
+
+            - You can install GitLab Runner on a virtual machine and have it use another virtual machine as an executor
+            - When you install GitLab Runner in a Docker container and choose the Docker executor to run your jobs, it’s sometimes referred to as a “Docker-in-Docker” configuration
+
+      - Tags:
+
+        - When you register a runner, you can add tags to it
+        - When a CI/CD job runs, it knows which runner to use by looking at the assigned tags
+        - Example:
+          job:
+            tags:
+              - ruby
+
+            - When the job runs, it uses the runner with the ruby tag
+
+      - Configuring Runners:
+
+        - You can configure the runner by editing the "config.toml" file
+        - This is a file that is installed during the runner installation process
+        - In this file you can edit settings for a specific runner, or for all runners
+        - You can specify settings like logging and cache. You can set concurrency, memory, CPU limits, and more
+
+      - If you use GitLab.com, you can run your CI/CD jobs on runners hosted by GitLab
+      - These runners are managed by GitLab and fully integrated with GitLab.com
+      - These runners are enabled for all projects, though you can disable them
+      - If you don’t want to use runners managed by GitLab, you can install GitLab Runner and register your own runners on GitLab.com
+
+      - Monitor Runners:
+
+        - You can use Prometheus to monitor your runners
+        - You can view things like the number of currently-running jobs and how much CPU your runners are using.
+
+      - Use a runner to run your job:
+
+        - After a runner is configured and available for your project, your CI/CD jobs can use the runner.
+        - Specify the name of the runner or its tags in your .gitlab-ci.yml file.
+        - Then, when you commit to your repository, the pipeline runs, and the runner’s executor processes the commands.
+
+  GITLAB CI Fundamentals:
+
+    - Predefined environment variables:
+
+      - Predefined CI/CD variables are available in every GitLab CI/CD pipeline.
+      - Example:
+
+        CI_COMMIT_SHORT_SHA - The first eight characters of CI_COMMIT_SHA
+
+        build website:
+          stage: build
+          script:
+            - echo $CI_COMMIT_SHORT_SHA
+            - npm install
+            - npm install -g gatsby-cli
+            - gatsby build
+            - sed -i "s/%%VERSION%%/$CI_COMMIT_SHORT_SHA/" ./public/index.html
+        test deployment:
+          image: alpine
+          stage: deployment tests
+          script:
+            - apk add --no-cache curl
+            - curl -s "https://instazone.surge.sh" | grep -q "Hi people"
+            - curl -s "https://instazone.surge.sh" | grep -q "$CI_COMMIT_SHORT_SHA"
+
+        - In this example the version is the variable which will be defined in the source code (pom, html, etc.,)
+        - We can also set this value in the pipeline configuration
+
+    - Using caches to optimize the build speed
+
+      - Some of the jobs do need a lot of time to run
+      - especially the build job which needs to download some dependencies before it can run
+      - if you are used with other more “traditional” CI servers like Jenkins, this extra time might seem like “forever”
+      - this behaviour occurs because each job is started using a clean environment and only the code within Git is available
+      - there is a solution for this and it is called “cache”
+      - using caches it is possible to speed up the execution of the job by instructing Gitlab to hold onto some files that we might need
+      - cache:
+        - ideal candidates for caching are the external project dependencies that are not stored in Git and that need to be downloaded
+        - Usage in .gitlab-ci.yml:
+
+        cache:
+          key: ${CI_COMMIT_REF_SLUG}
+          paths:
+            - node_modules/
+
+        - the cache can be used locally (on a job level) or globally
+        - Clearing caches:
+          - go from your project to Pipelines
+          - click on the button “Clear Runner Caches” to delete the cache
+      - cache vs artifacts:
+
+        - they might seem very similar but they are not the same thing and serve different purposes
+        - artifacts:
+          - is usually the output from the build process (the package that we want to deploy)
+          - an artifact can be partial (if the final package is built across multiple stages)
+          - artifacts can be used to pass data between jobs/stages
+        - cache:
+          - should not be used for storing artifacts (even if technically possible)
+          - should only be used as temporary storage for project dependencies
+
+      - Deployment Environments:
+
+        - Gitlab has the concept of environments
+        - environments allow you to control the continuous deployment of your software
+        - allows you to track your deployments, so that you know what is currently installed, on which systems and in which version
+        - environments let you simply tag your jobs and in this way Gitlab knows what you are doing
+        - Usage in .gitlab-ci.yml:
+
+            environment:
+              name: staging
+              url: http://somedomain.surge.sh
+
+        - Example:
+
+            deploy staging:
+              stage: deploy staging
+              environment:
+                name: staging
+                url: http://instazone-staging.surge.sh
+              script:
+                - npm install --global surge
+                - surge --project ./public --domain instazone-staging.surge.sh
+
+            deploy production:
+              stage: deploy production
+              environment:
+                name: production
+                url: http://instazone.surge.sh
+              script:
+                - npm install --global surge
+                - surge --project ./public --domain instazone.surge.sh
+
+        - you can view your environments from your project page by going to Deployments > Environments
+
+      - Defining variables
+
+        - you can define variables in the jobs or globally
+        - you can specify a variable like this:
+
+          variables:
+            STAGING_DOMAIN: somedomain.com
+
+            - now if you need to change the domain name, you only have to do it in one place
+
+      - Example:
+
+          variables:
+            STAGING_DOMAIN: instazone-staging.surge.sh
+            PRODUCTION_DOMAIN: instazone.surge.sh
+
+            deploy staging:
+              stage: deploy staging
+              environment:
+                name: staging
+                url: http://$STAGING_DOMAIN
+              script:
+                - npm install --global surge
+                - surge --project ./public --domain $STAGING_DOMAIN
+
+            deploy production:
+              stage: deploy production
+              environment:
+                name: production
+                url: $PRODUCTION_DOMAIN
+              script:
+                - npm install --global surge
+                - surge --project ./public --domain $PRODUCTION_DOMAIN
+
+    - allow_failure
+
+      - Use allow_failure to determine whether a pipeline should continue running when a job fails.
+      - To let the pipeline continue running subsequent jobs, use allow_failure: true.
+      - To stop the pipeline from running subsequent jobs, use allow_failure: false.
+      - The default value for allow_failure is:
+
+        - true for manual jobs.
+        - false for manual jobs that also use rules.
+        - false in all other cases.
+
+      - Example:
+
+          job1:
+            stage: test
+            script:
+              - execute_script_1
+
+            job2:
+            stage: test
+            script:
+              - execute_script_2
+            allow_failure: true
+
+            job3:
+            stage: deploy
+            script:
+              - deploy_to_staging
+
+            - In this example, job1 and job2 run in parallel:
+                - If job1 fails, jobs in the deploy stage do not start.
+                - If job2 fails, jobs in the deploy stage can still start.
+
+      - before_script:
+
+        - Use before_script to define an array of commands that should run before each job’s script commands, but after artifacts are restored.
+        - before_script can be used locally or globally within a specified job
+        - Example:
+
+            job:
+              before_script:
+                - echo "Execute this command before any 'script:' commands."
+              script:
+                - echo "This command executes after the job's 'before_script' commands."
+
+          - Scripts you specify in before_script are concatenated with any scripts you specify in the main script. The combined scripts execute together in a single shell.
+
+      - after_script:
+
+        - Use after_script to define an array of commands that run after each job, including failed jobs.
+
+        - Example:
+
+            job:
+              script:
+                - echo "An example script section."
+              after_script:
+                - echo "Execute this command after the `script` section completes."
+
+  

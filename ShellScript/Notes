@@ -1,0 +1,353 @@
+What is a shell?
+
+  - A program that interprets the commands that you type in your terminal and passes them on to the operating system
+  - The purpose of the shell is to make it to more convenient for you to issue commands to your computer
+
+What is BASH?
+
+  - BASH is Bourne Again SHell
+  - It's feature rich
+  - It's fast
+  - Very commonly used Shell on the linux operating systems
+
+What is script?
+
+  - A shell script is a file containing commands for the shell
+  - A bash script is simply a file containing commands for a bash shell
+  - Scripts allows you to automate tasks, saves time and makes you more productive
+
+Structure of a bash script
+
+  - All bash scripts have 3 core components:
+
+    1. The shebang line (#!/bin/bash) --> Begining
+    2. Commands  --> Middle
+    3. Exit statements (0=successful; 1-255=unsuccessful) --> The End
+
+    - Example:(first_script)
+
+      #!/bin/bash
+
+      echo "This is my first bash sript"
+
+      exit 0
+
+  - "#" is used for comments in the bash scripts
+
+  - Setting up secure script permissions
+
+    - File permissions will tells who can perform certain actions on a given file
+    - In linux, file permissions are represented by set of 10 characters sets together
+    - Example:
+
+        drwxr-xr-x  2 user1 group1 4096 Sep 26 18:01 bash_course
+        -rwxr--r--  1 user1 group1    0 Sep 26 18:20 file.txt
+
+      - The first character stands alone and remaining 9 are broken up into 3 sets of 3.
+      - The first character is either '-' or 'd' where '-' indicates a file and 'd' indicates a directory
+      - The next set of 3 characters "rwx" represents the permissions of the owner of the file.The owner is shown in the 3rd column in the above example
+        -  The owner 'user1' has rwx (read, write, executable) permissions from the above example
+      -  The next set of 3 characters "r-x" or "r--" represents the permissions of the group of the file (group1)
+        - Here, '-' indicates no r/w/x permissions
+      - The last set of 3 characters "r-x" or "r--" represents the permissions of every other users  who is neither a owner nor the part of the group
+
+    - To secure the scripts, we have to make full permissions only to the owner but not everyone else
+    - Use "chmod 744 first_script" for the same
+
+  - Adding scripts to PATH:
+
+    - PATH: The PATH variable tells the shell where to search for executable files
+    - We can add folders to our PATH variable by modifying the ".profile" file
+    - We can make our scripts accessible system-wide by putting them into a folder covered by our PATH
+    - Try to avoid giving your script names that may conflict with another command on the system
+    - Example:
+
+        root@ip-172-31-17-17:~/bash_course/scripts# echo $PATH
+        /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
+        root@ip-172-31-17-17:~/bash_course/scripts#
+
+        # vi ~/.profile
+
+        export PATH=$PATH:/bash_course/scripts/
+
+        # source ~/.profile --> This command will reload the '.profile'
+
+        root@ip-172-31-17-17:~/bash_course/scripts# echo $PATH
+        /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin:/bash_course/scripts/
+
+----------------------------------------------------------------------------------------------------------------------------
+
+Variables and Shell expansions:
+
+  - Variables allows us to store the useful data under convenient names
+  - Shell expansions are very powerful features that allows us to retrieve data from the variables,
+    process command outputs and perform calculations.
+  - There are 3 types of shell parameters:
+
+    - Variables
+    - Positional Parameters
+    - Special Parameters
+
+- Variables: "A parameter whose values can be changed manually"
+
+  - There are 2 types of Variables
+
+    1. User defined Variables
+    2. SHELL Variables - BOURNE Shell Variables & BASH Shell variables
+
+  - Setting the value of a used defined variable
+
+     "name=value"
+
+     - There shouldn't be a space around the equal sign
+     - User defined variables should be all lowercase
+
+  - Shell Variables:
+    - Shell variables are the shell defined variables
+    - All the shell variables have uppercase names
+    - Examples of most commonly used shell Variables
+
+      - HOME  : Absolute path to the current user's home directory
+      - PATH  : List of directories that the shell should search for executable files
+      - USER  : The current user's name
+      - HOSTNAME  : The name of the current machine
+      - HOSTTYPE  : The current machine's CPU architecture
+
+  - Parameter Expansion:
+
+    - The parameter expansion is a process of retrieving a value stored in a parameter
+    - Syntax :
+      $parameter - Simple
+      ${parameter} - Advanced
+    - Example:
+
+        #!/bin/bash
+
+        name="Naveen"
+        echo "Hello ${name}"
+
+  - Command Substitution:
+
+    - Command Substitution is a shell feature that allows you to grab the output of a command and do stuff with it
+    - It is used to directly reference the result of the command
+    - syntax
+
+      $(command)
+
+    - Example:
+
+        #!/bin/bash
+
+        time=$(date +%H:%m:%S)
+
+        echo "Hello, The time now is $time"
+
+- Positional Parameters:
+
+  - Arithmetic expansion:
+
+    - It is a shell feature that allows you to do mathematical caliculations with whole numbers in your script
+    - Syntax:
+
+      $((expression))
+
+    - Example:
+
+      #!/bin/bash
+
+      x=4
+      y=2
+
+      echo $((x+y))
+      echo $((x-y))
+      echo $((x/y))
+      echo $((x*y))
+
+  - The BC Command:
+
+    - The 'bc' command is allows us to perform calculations with decimal numbers
+    - Syntax:
+
+      echo "expression" | bc
+
+    - Use the 'scale' variable to control the number of decimal places that are included in the output
+    - Example:
+
+      echo "scale=5;10/3" |bc
+      3.33333
+
+  - Tilde (~) expansion
+
+    - The Tilde expansion within the shell is useful when writing the scripts that need to work across multiple directories
+    - By default '~' will expands to the current user's home directory
+    - For example, '~amy' will check to see if 'amy' is a valid username. If found then it is converted to the
+      path to that 'amy' home directory
+    - '~+' is the same as '$PWD' and '~-' is the same as '$OLDPWD'
+
+  - Brace {} Expansion:
+
+    - There are two types of brace expansions:
+
+      1. String lists : {1,2,3,a,b,c}
+      2. Range lists  : {1..100}
+
+    - we can expand incrementally using the additional ".." followed by the required increment. Ex: {1..100..3}
+    - we can use leading zeros to make sure that all values you expand to have the same number of digits. Ex: {001..100}
+    - we can use more than one brace expansion to a single command line, along with prefixes and postfixes. Ex:
+
+      mkdir month{01..12}
+      touch month{01..12}/file{01..31}.txt
+
+----------------------------------------------------------------------------------------------------------------------------
+
+How to BASH processes command lines?
+
+  - Command lines are just strings of characters
+  - When bash recerives a command line, it will follow the following 6 step process to execute it
+
+    1. Tokenisation
+
+      - Token:  is a sequence of characters that is considered as a single unit by the shell
+      - Metacharacters: |, &, ;, (), <>, space, tab and new line
+      - Word : "A token that does not contain an unquoted Metacharacter"
+      - Operator: "A token that contains at least one unquoted Metacharacter "
+
+    2. Command Identification
+
+      - Simple commands are just a bunch of individual words, and each simple command is terminated by a control operator
+      - Compound commands provides bash with its programming constructs such as if statements, for loops, while loops, etc.,
+
+    3. Expansions
+
+    4. Quote removal:
+
+      - We often add quotes to control how the command is interpreted, so this step will simply removes
+        all those supportive quotes.
+
+    5.  Redirection:
+
+  - After completing the above 5 steps, bash will then executes the command line that is left over
+
+  Explination:
+  ------------
+  1. Tokenisation:
+
+    -  There are 2 types of operators:
+
+      1. Control Operators: "Newline, |, ||, &, &&, ;, ;;, ;&, |&, (, ) "
+      2. Redirection Operator: "<, >, <<, >>, <&, >|, <<-, <>, >&"
+
+    - Control and Redirection operators only matter if they are unquoted
+
+  2. Command Identification
+
+    - Simple commands are terminated by control operators.
+    - the shell uses reserved words to identify where compound commands start and end
+
+  3. Expansions:
+
+    - There are 4 stages of expansions
+
+      - Stage-1: Brace Expansion
+      - Stage-2:
+        - Parameter Expansion
+        - Arithmetic Expansion
+        - Command Substitution
+        - Tilde expansion
+      - Stage-3: Word Splitting
+      - Stage-4: Globbing
+
+    - Expansions in early stages are performed first
+      - Example: x=10 and we would not do "echo {1..$x}" in the brace expansion because the variable x is not performed
+                 before brace '{}' expansion so the bash wouldn't know the value of 'x'
+
+    - The expansions that are in the same stage are all given the same priority and are simply performed in the order they
+      are found on the command line when it is read from left to right
+       - Example:
+          echo $name has $((1+2)) apples
+          echo $name has {1..3} apples and $((5=2)) oranges
+
+    - Word Splitting:
+      - A process the shell performs to split the result of some unquoted expansions into seperate words
+      - Word splitting can have some very significant effects on how your command lines are interpreted
+      - Word splitting is only performed on the result of unquoted parameter expansions, command Substitution and
+        Arithmetic expansions
+      - The characters used to split the words are governed by the IFS (Internal Field Seperator) i.e.,
+        space, tab and new line are the default values
+        Example:
+          echo "${IFS@Q}" which results --> $' \t \n'
+      - We can also change the default value of IFS by assigning other values. Ex: IFS="," which considered IFS value as
+        ',' until  we change back to include the default values
+
+    - Globbing:
+      - Is also known as filename expansion, is used to generate an alphabetically-sorted list of file names that match
+        a certain pattern exactly
+      - Globbing is used as a shortcut for listing the files that a command should operate on.
+      - It is only performed on words (not operators)
+      - Globbing patterns are words that contain unquoted special pattern characters:  *, ?, [
+      - The special pattern characters have the following meanings:
+
+        * - Matches any string, including the null string.
+          - Example: ls *.txt --> which will gives all the files with '.txt' format
+
+        ? - Matches any single character.
+          - Example: ls file?.txt --> file1.txt file2.txt file3.txt
+          - Example: ls file???.txt --> file123.txt fileabc.txt
+
+        [] - Matches exactly 1 character, but only if it's one listed within the [].
+           - Example: ls file[0-9].txt --> file1.txt file2.txt file3.txt
+           - Example: ls file[a-z].txt --> filea.txt fileb.txt
+
+  4. Quote Removal: Is the process that bash uses to remove redundant quotes from the final command
+
+    - Quoting: "The purpose of quoting is to remove the special meaning from special characters"
+
+      - There are 3 types of quoting in the bash
+
+        1. Backslash (\): Removes special meaning from the next character
+          - Example:
+
+              # echo naveen \& noorbhasha
+              naveen & noorbhasha
+
+        2. Single Quotes (''): Removes special meaning from all characters inside
+          - Example:
+
+              # file='/Users/naveen.noor/Desktop'
+              # echo $file
+              /Users/naveen.noor/Desktop
+
+        3. Double Quotes (""): Removes special meaning from all except '$' sign and backticks(`)
+          - Example:
+
+              # file="/Users/$USER/Desktop"
+              # echo $file
+              /Users/naveen.noor/Desktop
+
+    - During quote removal, the shell removes all the unquoted backslashes, single quote characters and
+      double quote characters that didn't result from a shell expansion.
+
+  5. Redirection:
+
+      - Finally, the shell processes any redirection operators to determine where the standard input,
+        standard output and standard error data streams for the command should connect to.
+      -  we have 3 data streams:
+
+          1. Stream 0 = Standard Input
+          2. Stream 1 = Standard Output
+          3. Stream 2 = Standard Error
+
+      - Streams can only connect to one location at a time
+      - Redirection is about changing where these streams connect to
+      - Redirection operators each one have one operand
+      - Examples:
+
+        command < file --> Redirects contents of file to the standard input of command
+        command > file --> Truncates the file and then redirects standard output of the command to it
+        command >> file --> Appends standard output of a command to a file
+        command 2> file --> Truncates file and then redirects standard error of command to it
+        command 2>> file --> Appends standard error of a command to a file
+        command &> file --> Truncates file and then redirects both standard output and standard error of command to it
+        command &>> file --> Appends both standard output and standard error of a command to a file
+
+----------------------------------------------------------------------------------------------------------------------------
