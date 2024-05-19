@@ -1,171 +1,789 @@
-Terraform:
+Terraform v1.7.4
+-----------------
 
-  - HashiCorp Terraform is an infrastructure as code tool that lets you define both cloud and on-prem resources in human-readable
-    configuration files that you can version, reuse, and share
-  - You can then use a consistent workflow to provision and manage all of your infrastructure throughout its lifecycle
-  - Terraform can manage low-level components like compute, storage, and networking resources,
-    as well as high-level components like DNS entries and SaaS features.
+Infrastructure Orchestration
+----------------------------
 
-How does Terraform work?
+	- Infrastructure Orchestration is primarily used to create and manage infrastructure environments
+	- Example:
 
-  - Terraform creates and manages resources on cloud platforms and other services through their application programming interfaces (APIs).
-  - Providers enable Terraform to work with virtually any platform or service with an accessible API.
+		- Create 3 servers with 4GB RAM, 2 vCPUs. Each server should have firewall rule to allow SSH connection from Office IPs.
 
-  - The core Terraform workflow consists of three stages:
+Authentication: 
 
-    - Write:
+	- Is the process of verifying who a user is
+	- It could be the username and password or token (access &secrete token)
 
-      - You define resources, which may be across multiple cloud providers and services
-      - For example, you might create a configuration to deploy an application on virtual machines
-        in a Virtual Private Cloud (VPC) network with security groups and a load balancer.
+Authorization:
+	
+	- Is the process of verifying what they have access to
+	- It could be ready only or write only or no access to a particular user on the services
 
-    - Plan:
+Terraform needs access credentials with relevant permissions to create and manage environments 
 
-      - Terraform creates an execution plan describing the infrastructure it will create, update, or destroy
-        based on the existing infrastructure and your configuration.
+Depending on the provider, the type of access credentials would change.
 
-    - Apply:
+	- Example
 
-      - On approval, Terraform performs the proposed operations in the correct order, respecting any resource dependencies.
-      - For example, if you update the properties of a VPC and change the number of virtual machines in that VPC, Terraform will recreate the VPC before scaling the virtual machines.
+		AWS		-	Access Keys and Secret Keys
+		GitHub	-	Tokens
 
-What is Infrastructure as Code with Terraform?
+Available Regions:
 
-  - Infrastructure as code (IaC) tools allow you to manage infrastructure with configuration files rather than through a graphical user interface.
-  - IaC allows you to build, change, and manage your infrastructure in a safe, consistent, and repeatable way by defining resource configurations that you can version, reuse, and share.
-  - Terraform is HashiCorp's infrastructure as code tool.
-  - It lets you define resources and infrastructure in human-readable, declarative configuration files, and manages your infrastructure's lifecycle.
-  - Here are the advantages with Terraform:
+	- Cloud providers offers multiple regions in which we can create our resource
+	- You need to decide the region in which Terraform would create the resource
+	- Different regions have their own seperate AMI-IDs
 
-    - Terraform can manage infrastructure on multiple cloud platforms.
-    - The human-readable configuration language helps you write infrastructure code quickly.
-    - Terraform's state allows you to track resource changes throughout your deployments.
-    - You can commit your configurations to version control to safely collaborate on infrastructure.
+	- Example Terraform scripts:
 
-  - Terraform's configuration language is declarative, meaning that it describes the desired end-state for your infrastructure
-  - To deploy infrastructure with Terraform:
+		# This is how we pass credentials directly in the provider section which is not recommended 
 
-    - Scope - Identify the infrastructure for your project.
-    - Author - Write the configuration for your infrastructure.
-    - Initialize - Install the plugins Terraform needs to manage the infrastructure.
-    - Plan - Preview the changes Terraform will make to match your configuration.
-    - Apply - Make the planned changes.
+		provider "aws" {
+		  region     = "eu-central-1"
+		  access_key = "XXXXXXXXX"
+		  secret_key = "XXXXXXXXX"
+		}
 
-  - Terraform keeps track of your real infrastructure in a state file, which acts as a source of truth for your environment.
-  - Terraform uses the state file to determine the changes to make to your infrastructure so that it will match your configuration.
+		resource "aws_instance" "first-ec2" {
+		    ami = "ami-0a23a9827c6dab833"
+		    instance_type = "t2.micro"
+		    tags = {
+		    Name = "second-tf-instance"
+		    }
+		}
 
-Install Terraform: (For MacOS)
+		provider azurerm {}
 
-  $ brew tap hashicorp/tap
+		# This is how we pass credentials via the file locations in the provider section which is not recommended 
 
-  $ brew install hashicorp/tap/terraform
+		provider "aws" {
+		  region     = "eu-central-1"
+		  shared_config_files = ["/Users/naveen.noor/Desktop/my-github-repos/Terraform/Terraform-Core-Concepts/.aws/conf"]
+		  shared_credentials_files = ["/Users/naveen.noor/Desktop/my-github-repos/Terraform/Terraform-Core-Concepts/.aws/creds"]
+		  profile = "default"
+		}
 
-  $ brew update
+Provider:
 
-  $ brew upgrade hashicorp/tap/terraform  (For upgrade)
+	- A provider is a plugin that lets Terraform manage an external API
+	- Example:
 
-  $ terraform version
+		provider "aws" {}
+		provider azurerm {}
 
-Hashicorp configuration language (HCL):
 
-  - The syntax of Terraform configurations is called HashiCorp Configuration Language (HCL)
-  - It is meant to strike a balance between human readable and editable as well as being machine-friendly.
-  - For machine-friendliness, Terraform can also read JSON configurations.
-  - Here is an example of Terraform's HCL syntax:
+Provider Plugins:
+	
+	- When we run "terraform init", plugins required for the provider are automatically downloaded and saved locally to a .terraform directory.
+	- Whenever we define a new provider in the terraform script, we have to run "terraform init" command
+	- Here is the commands in order to run terraform script:
 
-      <block> <parameter> {
-      key1 = value1
-      key2 = value2
-      }
+		$ terraform init
+		$ terraform plan
+		$ terraform apply 
 
-  - Here is the example:
+Resource:
 
-    resource "local_file" "pets" {
-    filename = "/home/pets.txt"
-    content = "This is the content of pets file"
-    }
+	- Resource block describes one or more infrastructure objects
+	- Example:
 
-    - Explinatioin:
+		resource "aws_instance" "first-ec2" {
+		    ami = "ami-0a23a9827c6dab833"
+		    instance_type = "t2.micro"
+		    }
 
-      resource --> block name
-      local_file --> resource type
-      local --> provider (Ex: AWS, GCP, AZURE, Etc.,)
-      file --> resource (Ex: ec2, s3, vpc, etc.,  )
-      pets --> resource name
-      filename , contents --> arguments
+		● resource aws_instance
+		● resource aws_alb
+		● resource iam_user
 
-  - Block:
+Resource Blocks:
 
-    - A block is a container for other content
-    - Example:
+	- A resource block declares a resource of a given type ("aws_instance") with a given local name ("first-ec2").
+	- Resource type and Name together serve as an identifier for a given resource and so must be unique.
+	- Example:
 
-        resource "aws_instance" "example" {
-            ami = "abc123"
+		resource "aws_instance" "first-ec2" {
+	    ami = "ami-0a23a9827c6dab833"
+	    instance_type = "t2.micro"
+	    }
 
-            network_interface {
-              # ...
-            }
-            }
+	    resource "aws_instance" "second-ec2" {
+	    ami = "ami-123"
+	    instance_type = "t2.micro"
+	    }
 
-        - A block has a type (resource in this example).
-        - Each block type defines how many labels must follow the type keyword.
-        - The resource block type expects two labels, which are aws_instance and example in the example
-        - A particular block type may have any number of required labels, or it may require none as with the nested network_interface block type.
-        - After the block type keyword and any labels, the block body is delimited by the { and } characters.
-        - Within the block body, further arguments and blocks may be nested, creating a hierarchy of blocks and their associated arguments.
+The core concepts, standard syntax remains similar across all providers.
+If you learn the basics, you should be able to work with all providers easily.
 
-  - Arguments:
+Provider Tiers:
 
-    - An argument assigns a value to a particular name:
-    - Example:
+	- Provider Maintainers:
 
-      image_id = "abc123"
+		- There are 3 primary type of provider tiers in Terraform
 
-      - The identifier before the equals sign is the argument name, and the expression after the equals sign is the argument's value.
+			- Official : Owned and Maintained by HashiCorp
+			- Partner :	Owned and Maintained by Technology Company that maintains direct partnership with HashiCorp.
+			- Community : Owned and Maintained by Individual Contributors.
 
-Terraform Workflow:
+	- Provider Namespace:
 
-  - A simple terraform workflow consists of 4 steps:
+		- Namespaces are used to help users identify the organization or publisher responsible for the integration
 
-    1. Write the configuration file (".tf" file)
-      - TF file is used for writing configuration files in Terraform using HCL.
-      
-    2. Run the terraform init command
+		- Official : hashicorp Ex. https://registry.terraform.io/providers/hashicorp/aws/latest
+		- Partner : Third-party organization e.g. https://registry.terraform.io/providers/aliyun/alicloud/latest
+		- Community : Maintainer’s individual or organization account, e.g. https://registry.terraform.io/providers/tsuru/acl/latest
 
-        $ terraform init
+	- Terraform requires explicit source information for any providers that are not HashiCorp-maintained using a new syntax in the required_providers nested block inside the terraform configuration block
 
-        - This command will check the configuration file and initialize the working directory containing the ".tf" file
-        - It performs the following steps:
+	- Example: HashiCorp Maintained
 
-           * Backend Initialization
-           * Child Module Installation
-           * Plugin Installation
+		provider "aws" {
+		  region     = "eu-central-1"
+		  access_key = "XXXXXXXXX"
+		  secret_key = "XXXXXXXXX"
+		}
 
-    3. Review the execution plan by using the terraform "plan" command
+			- By defult we use "provider" and not mandatory to use "required_providers" for HashiCorp Maintained providers
 
-        $ terraform plan
+	- Example: Non-HashiCorp Maintained
 
-        - This command will show you the actions that will be carried out by terraform to create the resource
-        - This command is a convenient way to check whether the execution plan for a set of changes matches your expectations
-          without making any changes to real resources or to the state.
-        - By default, when Terraform creates a plan it:
+		terraform {
+		required_providers {
+		digitalocean ={
+		source = "digitalocean/digitalocean"
+		}
+		}
+		}
+		- It is not necessary to use "required_providers" unless we want to customize things based on specific use case
+		- It is essential to use "required_providers" for various community providers or various platform specific providers 
 
-          * Reads the current state of any already-existing remote objects to make sure that the Terraform state is up-to-date.
-          * Compares the current configuration to the prior state and noting any differences.
-          * Proposes a set of change actions that should, if applied, make the remote objects match the configuration
+Terraform Destroy:
 
-    4. Apply the changes using the terraform "apply" command
+	- "terraform destroy" allows us to destroy all the resource that are created within the folder.
+	- terraform destroy with -target flag allows us to destroy specific resource
+	- Example:
 
-        $ terraform apply
+		$ terraform destroy - target aws_instance.first-ec2
 
-        - The terraform apply command executes the actions proposed in a Terraform plan.
-        - it will automatically create a new execution plan (as if you had run terraform plan) and
-          then prompt you to approve that plan, before taking the indicated actions.
-        - Another way to use terraform apply is to pass it the filename of a saved plan file you created earlier with terraform plan -out=...,
-          in which case Terraform will apply the changes in the plan without any confirmation prompt.
+State File:
 
-  - If we would like to destroy the whole infrastructure, just use the "destroy" command
+	- Terraform stores the state of the infrastructure that is being created from the TF files
+	- This state allows terraform to map real world resource to your existing configuration
 
-    $ terraform destroy
+Terraform States:
 
-      - The terraform destroy command is a convenient way to destroy all remote objects managed by a particular Terraform configuration.
+	- Terraform's primary function is to create, modify, and destroy infrastructure resources to match the desired state described in a Terraform configuration
+	- Current state is the actual state of a resource that is currently deployed.
+	- Terraform tries to ensure that the deployed infrastructure is based on the desired state.
+	- If there is a difference between the desired & current states, terraform plan presents a description of the changes necessary to achieve the desired state.
+	- Terroform would not care about the resource values that are not defined it with the desired state. Only the values defined in the resources will be checked with the desired state
+
+Provider Versioning:
+
+	- Provider plugins are released separately from Terraform itself.
+	- They have different set of version numbers.
+	- During terraform init, if version argument is not specified, the most recent provider will be downloaded during initialization.
+	- For production use, you should constrain the acceptable provider versions via configuration, to ensure that new versions with breaking changes will not be automatically installed.
+	- There are multiple ways for specifying the version of a provider.
+	- Example:
+
+		>=1.0 : Greater than equal to the version
+		<=1.0 :	Less than equal to the version
+		~>2.0 : Any version in the 2.X range.
+		>=2.10,<=2.30 : Any version between 2.10 and 2.30
+
+	- Dependency Lock File:
+
+		- Terraform dependency lock file allows us to lock to a specific version of the provider.
+		- If a particular provider already has a selection recorded in the lock file, Terraform will always re-select that version for installation, even if a newer version has become available.
+		- You can override that behavior by adding the -upgrade option when you run terraform init
+
+			$ terraform init -upgrade
+
+Terraform Refresh:
+
+	- Terraform can create an infrastructure based on configuration you specified.
+	- It can happen that the infrastructure gets modified manually.
+	- The terraform refresh command will check the latest state of your infrastructure and update the state file accordingly.
+	- You shouldn't typically need to use this command, because Terraform automatically performs the same refreshing actions as a part of creating a plan in both the terraform plan and terraform apply commands.
+	- The terraform refresh command is deprecated in newer version of terraform.
+	- The -refresh-only option for terraform plan and terraform apply was introduced in Terraform v0.15.4.
+
+
+======================================================================================================================================================================================================================
+
+Creating Firewall Rules (security groups) using Terraform: (https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group)
+
+	- Resources that are used:
+
+		- aws_security_group
+		- aws_vpc_security_group_ingress_rule
+		- aws_vpc_security_group_egress_rule
+
+	- ingress_rule = inbound rule
+	- egress_rule = outbound rule
+	- ip_protocol = "-1" # semantically equivalent to all ports
+
+Creating Elastic IPs with Terraform (https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eip)
+
+	- What is an Elastic IP?
+
+		- An Elastic IP is a static IPV4 address in AWS
+		- You can create it and associate it with AWS EC2 instance 
+
+	- Resources that are used:
+
+		- aws_eip
+
+Attributes:
+
+	- Attributes are the fields in a resource that holds the values that end up in state
+	- Each resource has its associated set of attributes
+	- Each resource type has a predefined set of attributes determined by the provider
+	- Example: For EC2
+
+		- id : ID of the instance 
+		- public_ip : Contains the public IP address
+
+	- Terraform allows us to reference the attribute of one resource to be used in a different resource.
+	- Example:
+
+		- create an elastic ip and a security group
+		- whitelist the generated elastic ip with the created security group 
+
+		resource "aws_eip" "lb" {
+			  domain   = "vpc"
+			}
+
+			resource "aws_security_group" "example" {
+			  name        = "attribute-sg"
+			}
+
+			resource "aws_vpc_security_group_ingress_rule" "example" {
+			  security_group_id = aws_security_group.example.id
+			  cidr_ipv4   = "${aws_eip.lb.public_ip}/32"
+			  from_port   = 443
+			  ip_protocol = "tcp"
+			  to_port     = 443
+			}
+
+			- The "$" indicates that the terraform will replace the expression inside the curly braces with the caliculated value
+
+Output values:
+
+	- Output values make information about your infrastructure available on the command line, and can expose information for other Terraform configurations to use.
+	- Example:
+
+		- Create a Elastic IP (Public IP) resource in AWS and output the value of the EIP.
+
+	- Output values defined in Project A can be referenced from code in Project B as well.
+
+Terraform Variables:
+
+	- Terraform input variables are used to pass certain values from outside of configuration 
+	- Input variables let you customize aspects of Terraform modules without altering the module's own source code. 
+	- This functionality allows you to share modules across different Terraform configurations, making your module composable and reusable.
+	- We can have a central source from which we can import the values from.
+	- Example:
+
+
+		terraform-variables.tf
+
+			resource "aws_security_group" "allow_tls" {
+			  name        = "terraform-firewall"
+			  description = "Managed from Terraform"
+			}
+
+			resource "aws_vpc_security_group_ingress_rule" "app_port" {
+			  security_group_id = aws_security_group.allow_tls.id
+			  cidr_ipv4         = var.vpn_ip
+			  from_port         = var.app_port
+			  ip_protocol       = "tcp"
+			  to_port           = var.app_port
+			}
+
+			resource "aws_vpc_security_group_ingress_rule" "ssh_port" {
+			  security_group_id = aws_security_group.allow_tls.id
+			  cidr_ipv4         = var.vpn_ip
+			  from_port         = var.ssh_port
+			  ip_protocol       = "tcp"
+			  to_port           = var.ssh_port
+			}
+
+			resource "aws_vpc_security_group_ingress_rule" "ftp_port" {
+			  security_group_id = aws_security_group.allow_tls.id
+			  cidr_ipv4         = var.vpn_ip
+			  from_port         = var.ftp_port
+			  ip_protocol       = "tcp"
+			  to_port           = var.ftp_port
+			}
+
+
+		variables.tf
+
+			variable "vpn_ip" {
+			    default = "200.20.30.50/32"
+			    description = "This is a VPN Server Created in AWS"
+			}
+
+			variable "app_port" {
+			    default = "8080"
+			}
+
+			variable "ssh_port" {
+			    default = "22"
+			}
+
+			variable "ftp_port" {
+			    default = "21"
+			}
+
+Variable Definition File (TFVars):
+
+	- Managing variables in the production environment is one of the very important aspects to keep code clean and reusable
+	- Hashicorp recommends creating a seperate file with a name of *.tfvars to define all variable values in a project
+	- The recommended folder structure look like below:
+
+		1. Main Terraform configuration file
+
+			- Example: (main.tf)
+
+				resource "aws_instance" "myec2" {
+				  ami           = var.ami
+				  instance_type = "t2.micro"
+				}
+
+		2. variable.tf file that defines all the variables
+
+			- Example (variables.tf):
+
+				variable "ami" {}
+
+
+		3. terrarform.tfvars file that defines value to all the variables (*.tfvars in this case)
+
+			- Example (terraform.tfvars):
+
+				ami = "ami-0e670eb768a5fc3d4"
+
+		- Commands to execute the above use case:
+
+			$ terraform plan
+			$ terraform apply
+			$ terraform plan -var-file="terraform.tfvars"
+
+	- Configuration for different environment
+
+		- Organizations can have wide set of environments: Dev, Stage, Prod
+		- In that case, the variable declaration is as follows:
+
+			1. Main Terraform configuration file
+
+			- Example: (main.tf)
+
+				resource "aws_instance" "myec2" {
+				  ami           = var.ami
+				  instance_type = "t2.micro"
+				}
+
+			2. variable.tf file that defines all the variables
+
+				- Example (variables.tf):
+
+					variable "ami" {}
+
+
+			3. terrarform.tfvars file that defines value to all the variables (*.tfvars in this case)
+
+				- Example (prod.tfvars):
+
+					ami = "ami-0e670eb768a5fc3d4"
+
+				- Example (dev.tfvars):
+
+					ami = "ami-0daf5eb78a5fdfg45"
+
+			- Commands to execute the above use case:
+
+				$ terraform plan
+				$ terraform apply
+				$ terraform plan -var-file="prod.tfvars"
+
+	- Once the "terraform.tfvars" file is defined, terraform will ignores the defualt values that are defined in the variable file
+	- The variable preference would be from "terraform.tfvars" file
+	- If the value is not assigned in the "terraform.tfvars" file, the terraform will check the default value that is defined in the variable.tf file
+	- If you have multiple "tfvars" files (Ex. prod.tfvars, dev.tfvars, etc.,) you have to explicitly give the value to the variable (if the default is not defined) in the command line or in the terraform plan command as : 
+
+		$ terraform plan -var-file="prod.tfvars"
+
+	- If you have not defined a value to the variable, Terraform will ask you to input the value in CLI promptwhen you run terraform plan/apply operations
+
+
+Declaring the variable Values:
+
+	- Variable Defaults
+	- Variable definion file (*.tfvars)
+	- Environment variables
+	- Setting variable in the command line 
+
+		- To specify individual variables in the command line, use -var option when running the terraform plan and terraform apply commands:
+
+			- $ terraform plan -var="instance_type=m4.large"
+
+	- Setting variable through Environment Variables
+
+		- Terraform searches the environment of its own process for environment variables named TF_VARS_ follwed by the name of the declared variable
+
+			- $ export TF_VARS_instance_type=m5.large
+
+Variable Definition Precedence:
+
+	- Terraform loads variables in the following order, with later sources taking precedence over earlier ones:
+
+		- Environment variables
+		- The Terraform.tfvars file, if present
+		- The Terraform.tfvars.json file, if present 
+		- Any *.auto.tfvars or *.auto.tfvars.json files, proceeded in lexical order of their file names
+		- Any -var and -var-file option on the command line 
+
+	- Example:
+
+		1. ENV variable of TF_VARS_instant_type="t2.micro"
+		2. value in terraform.tfvars="t2.large"
+		3. terraform plan -var="instance_type=m5.large"
+
+			Final Result	:	"m5.large"
+
+
+Data Types of Variable:
+
+	- The "type" argument in a variable block allows you to restrict the type value that will be accepted as the value for the variable 
+	- Example:
+
+		variable "image_id" {
+		type = string
+		}
+
+	- If no "type" constraint is set, then a value of any type is accepted 
+
+	- Fetch the data from Maps and List in variable
+
+		- Example: (Maps)
+
+			resource "aws_instance" "my_ec2" {
+				ami = "some_ami_id"
+				instance_type = var.types["us-east-1"]
+			}
+
+			var "list" {
+			type = list
+			default = ["m5.large", "m5.xlarge", "t2.micro"]
+			}
+
+			var "type" {
+				type = map
+				default = {
+					us-east-1 = "t2.micro",
+					us-west-2 = "t2.medium",
+					ap-south-1 = "t2.small"
+				}
+			}
+
+			- In the above example, the value "t2.micro" will be picked up for the instance_type
+
+		- Example: (List)
+
+			resource "aws_instance" "my_ec2" {
+				ami = "some_ami_id"
+				instance_type = var.list(1) # The position of the list
+			}
+
+			- In the above example, the value "m5.xlarge" will be picked up for the instance_type 
+
+
+Count Parameter:
+
+	- With the count parameter, we can simply specify the count value and the resource can be scaled accordingly
+
+	- Example:
+
+		resource "aws_instance" "my_ec2" {
+				ami = "some_ami_id"
+				instance_type = "t2.micro"
+				count = 5
+			}
+
+			- From the above example, 5 ec2 intances will be created 
+
+	- In resource blocks where count is set, an additional count object is available in expressions, so you can modify the configuration of each instance.
+	- This object has one attribute:
+
+		- count.index — The distinct index number (starting with 0) corresponding to this instance.
+
+	- With the below code, terraform will create 5 IAM users. But the problem is that all will have the same name.
+
+		resource "aws_iam_user" "lb" {
+		name = "loadbalancer"
+		count = 5
+		path = "/system/"
+		}
+
+	- count.index allows us to fetch the index of each iteration in the loop.
+
+		resource "aws_iam_user" "lb" {
+		name = "loadbalancer.${count.index}"
+		count = 5
+		path = "/system/"
+		}
+
+		- From the above example, the 5 iam resources will be created as loadbalancer.0, loadbalancer.1,...loadbalancer.4
+
+	- Having a username like loadbalancer0, loadbalancer1 might not always be suitable.
+	- Better names like dev-loadbalancer, stage-loadbalancer, prod-loadbalancer is better.
+	- count.index can help in such scenario as well.
+	- Example:
+
+		variable "elb_names" {
+			type = list
+			default = ["dev-lb", "stg-lb", "prod-lb"]
+		} 
+
+		resource "aws_iam_user" "lb" {
+		name = var.elb_names[count.index]
+		count = 3
+		path = "/system/"
+		}
+
+		- From the above example, the 3 iam resources will be created as dev-lb, stg-lb and rod-lb
+
+		- Conditional Expression:
+
+			- A conditional expression uses the value of a bool expression to select one of two values.
+			- Syntax:
+
+				condition ? true_val : false_val
+
+			- If condition is true then the result is true_val. If condition is false then the result is false_val.
+
+			- Example:
+
+				var "istest" {
+					default = true
+				}
+
+				resource "aws_instance" "dev" {
+						ami = "some_ami_id"
+						instance_type = "t2.micro"
+						count = var.istest == true ? 3 : 0
+					}
+
+				resource "aws_instance" "prod" {
+						ami = "some_ami_id"
+						instance_type = "t2.small"
+						count = var.istest == false ? 1 : 0
+					}
+
+					- From the above example, the 3 dev resources with a t2.micro type instance will be created and 0 prod resources are created
+					- If the "istest" value is defined as false, then 1 prod resources with a t2.small type instance will be created and 0 dev resources are created
+
+
+Local Values:
+
+	- A local value assigns a name to an expression, allowing it to be used multiple times within a module without repeating it.
+	- Example:
+
+		locals {
+		  common_tags = {
+		    Owner = "DevOps Team"
+		    service = "backend"
+		  }
+		}
+		resource "aws_instance" "app-dev" {
+		   ami = "ami-082b5a644766e0e6f"
+		   instance_type = "t2.micro"
+		   tags = local.common_tags
+		}
+
+		resource "aws_instance" "db-dev" {
+		   ami = "ami-082b5a644766e0e6f"
+		   instance_type = "t2.small"
+		   tags = local.common_tags
+		}
+
+		resource "aws_ebs_volume" "db_ebs" {
+		  availability_zone = "us-west-2a"
+		  size              = 8
+		  tags = local.common_tags
+		}
+
+
+		- Local Values can be used for multiple different use-cases like having a conditional expression.
+		- Syntax:
+
+			locals {
+				name_prefix = "${var.name ! = "" ? var.name : var.default}"
+			}
+
+		- Local values can be helpful to avoid repeating the same values or expressions multiple times in a configuration.
+		- If overused they can also make a configuration hard to read by future maintainers by hiding the actual values used
+		- Use local values only in moderation, in situations where a single value or result is used in many places and that value is likely to be changed in future.
+
+Terraform Functions: (https://developer.hashicorp.com/terraform/language/functions)
+
+	- The Terraform language includes a number of built-in functions that you can use to transform and combine values.
+	- The general syntax for function calls is a function name followed by comma-separated arguments in parentheses:
+	- Syntax:
+
+		function (argument1, argument2)
+
+	- Example:
+
+		max(5, 12, 9)
+
+	- The Terraform language does not support user-defined functions, and so only the functions built in to the language are available for use as follows:
+
+		● Numeric
+		● String
+		● Collection
+		● Encoding
+		● Filesystem
+		● Date and Time
+		● Hash and Crypto
+		● IP Network
+		● Type Conversion
+
+	- Example: "lookup" function
+
+		locals {
+		  time = formatdate("DD MMM YYYY hh:mm ZZZ", timestamp())
+		}
+
+		variable "region" {
+		  default = "ap-south-1"
+		}
+
+		variable "tags" {
+		  type = list
+		  default = ["firstec2","secondec2"]
+		}
+
+		variable "ami" {
+		  type = map
+		  default = {
+		    "us-east-1" = "ami-0323c3dd2da7fb37d"
+		    "us-west-2" = "ami-0d6621c01e8c2de2c"
+		    "ap-south-1" = "ami-0470e33cd681b2476"
+		  }
+		}
+
+		resource "aws_key_pair" "loginkey" {
+		  key_name   = "login-key"
+		  public_key = file("${path.module}/id_rsa.pub")
+		}
+
+		resource "aws_instance" "app-dev" { 
+		   ami = lookup(var.ami,var.region) --> The result would be ""ami-0470e33cd681b2476"" # And it will fetch the region value and created the instance using that AMI defined on that region
+		   instance_type = "t2.micro"
+		   key_name = aws_key_pair.loginkey.key_name
+		   count = 2
+
+		   tags = {
+		     Name = element(var.tags,count.index) --> The "firstec2" and "secondec2" will be assigned to the Name tag
+		   }
+		}
+
+
+		output "timestamp" {
+		  value = local.time
+		}
+
+		- From the above example, the "lookup" function has been used. 
+		- "lookup" function: 
+
+			- It's a collection function
+			- lookup retrieves the value of a single element from a map, given its key. If the given key does not exist, the given default value is returned instead.
+			- Syntax:
+
+				lookup(map, key, default)
+
+			- Example:
+
+				lookup({a="hello", b="world"}, "a", "what?")
+				hello
+				lookup({a="hello", b="world"}, "d", "what?") --> Here the given Key "d" is not found so, the default value would be the output
+				what?
+		
+	- Example: "file" function
+
+		- "file" reads the contents of a file at the given path and returns them as a string. 
+
+			> file("${path.module}/hello.txt")
+			 
+			Hello World
+			
+
+Data Sources:
+
+	- Data sources allow data Terraform to use or fetch information define outside of Terraform
+	- Example-1:
+
+		- Following data source code is used to get information on your digital ocean account 
+
+		data "digitalocean_account" "example" {}
+
+	- Example-2:
+
+		- Following data source allows you to read content of a file in your local system
+
+		data "local_file" "file_test" {
+		filename = "${path.module}/demo.txt"
+		}
+
+	- Example-3:
+
+		- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
